@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TechPlan AI – Technical Event Planner</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Custom Styles -->
+    <link rel="stylesheet" href="/static/style.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#eff6ff',
+                            100: '#dbeafe',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                            900: '#1e3a8a',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased min-h-screen flex flex-col">
+
+    <!-- Top Navigation Header -->
+    <header class="gradient-header text-white sticky top-0 z-50 shadow-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex flex-wrap justify-between items-center gap-4">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-500 to-indigo-600 flex items-center justify-center font-bold text-xl shadow-lg ring-2 ring-blue-400/30">
+                    TP
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-tight text-white flex items-center gap-2">
+                        TechPlan AI <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-400/30">College Planner Agent</span>
+                    </h1>
+                    <p class="text-xs text-slate-300">Technical Event Management, Task Decomposition & Automated Constraint Planning</p>
+                </div>
+            </div>
+
+            <div class="flex items-center space-x-2 text-xs">
+                <span class="inline-flex items-center px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 font-medium">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 mr-1.5 animate-pulse"></span> Agent Engine Online
+                </span>
+                <span class="text-slate-400 hidden md:inline">| Indian Rupee (₹) Pricing</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-grow w-full">
+
+        <!-- Preset Test Scenarios Toolbar -->
+        <section id="sample-preset-bar" class="mb-8 p-4 rounded-2xl glass-panel shadow-sm">
+            <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
+                <div class="flex items-center space-x-2">
+                    <span class="text-xs font-bold uppercase tracking-wider text-slate-500">Quick Test Scenarios:</span>
+                </div>
+                <div class="flex flex-wrap gap-2 text-xs">
+                    <button type="button" class="preset-btn px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 font-semibold transition" data-preset="standard_symposium">
+                        ✓ Standard Feasible (100 Pax, ₹25k)
+                    </button>
+                    <button type="button" class="preset-btn px-3 py-1.5 rounded-lg bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 font-semibold transition" data-preset="fail_capacity">
+                        ⚠ Fail 1: Overcrowded (300 > 150)
+                    </button>
+                    <button type="button" class="preset-btn px-3 py-1.5 rounded-lg bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 font-semibold transition" data-preset="fail_budget">
+                        ⚠ Fail 2: Budget Deficit (₹10k for 200 Pax)
+                    </button>
+                    <button type="button" class="preset-btn px-3 py-1.5 rounded-lg bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 font-semibold transition" data-preset="fail_duration">
+                        ⚠ Fail 3: Short Time (6 Sess / 2 Hrs)
+                    </button>
+                    <button type="button" class="preset-btn px-3 py-1.5 rounded-lg bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 font-semibold transition" data-preset="fail_equipment">
+                        ⚠ Fail 4: Missing Tech Equipment
+                    </button>
+                    <button type="button" class="preset-btn px-3 py-1.5 rounded-lg bg-slate-100 text-slate-700 border border-slate-200 hover:bg-slate-200 font-semibold transition" data-preset="fail_missing_inputs">
+                        ⚠ Fail 5: Missing Inputs
+                    </button>
+                    <button type="button" id="btn-reset-form" class="px-3 py-1.5 rounded-lg bg-slate-200 text-slate-800 hover:bg-slate-300 font-semibold transition">
+                        Reset Form
+                    </button>
+                </div>
+            </div>
+            <div id="active-preset-notice" class="mt-2 text-xs text-blue-700 bg-blue-50/70 px-3 py-1.5 rounded-lg border border-blue-100">
+                Loaded scenario: <b>Standard Feasible: National Technical Symposium</b> &mdash; Baseline valid symposium matching specification (100 participants, ₹25,000 budget, 150 capacity, 3 sessions).
+            </div>
+        </section>
+
+        <!-- EVENT REQUIREMENTS FORM SECTION -->
+        <section id="input-section" class="mb-10 bg-white rounded-3xl p-6 md:p-8 shadow-sm border border-slate-200">
+            <div class="border-b border-slate-200 pb-4 mb-6 flex flex-wrap justify-between items-center gap-2">
+                <div>
+                    <h2 class="text-xl font-bold text-slate-900">Event Requirements Specification</h2>
+                    <p class="text-sm text-slate-500">Provide college event parameters. The AI agent converts these into decomposed tasks, schedules, and budgets.</p>
+                </div>
+                <span class="text-xs font-semibold px-3 py-1 rounded-full bg-slate-100 text-slate-600">Step 1 of 2: Input Configuration</span>
+            </div>
+
+            <form id="requirements-form" onsubmit="event.preventDefault();" class="space-y-6">
+
+                <!-- 1. Basic Event Details -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="md:col-span-2">
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Event Name *</label>
+                        <input type="text" id="event_name" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm font-medium" placeholder="e.g. National Technical Symposium (TechPulse 2026)" required>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Event Date *</label>
+                        <input type="date" id="event_date" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm font-medium" required>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Event Description & Theme</label>
+                    <textarea id="description" rows="2" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm" placeholder="Provide background, departments involved, and core themes (e.g. AI, Cloud, Cyber Security, Competitive Coding)..."></textarea>
+                </div>
+
+                <!-- 2. Duration, Timing, Capacity & Budget -->
+                <div class="p-5 bg-slate-50/70 rounded-2xl border border-slate-200/80 grid grid-cols-1 md:grid-cols-4 gap-5">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Duration Type</label>
+                        <div class="flex items-center space-x-4 mt-2">
+                            <label class="flex items-center text-sm font-medium text-slate-700 cursor-pointer">
+                                <input type="radio" name="duration_type" value="days" checked class="text-blue-600 focus:ring-blue-500 mr-1.5"> Full Day(s)
+                            </label>
+                            <label class="flex items-center text-sm font-medium text-slate-700 cursor-pointer">
+                                <input type="radio" name="duration_type" value="hours" class="text-blue-600 focus:ring-blue-500 mr-1.5"> Part-Day (Hours)
+                            </label>
+                        </div>
+                        <div id="num-days-container" class="mt-2.5">
+                            <label class="text-xs text-slate-500 block mb-1">Number of Days:</label>
+                            <input type="number" id="num_days" min="1" max="5" value="1" class="w-full px-3 py-1.5 rounded-lg border border-slate-300 text-sm font-semibold">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Operating Timings</label>
+                        <div class="grid grid-cols-2 gap-2 mt-1">
+                            <div>
+                                <span class="text-xs text-slate-500 block">Start Time</span>
+                                <input type="time" id="preferred_start_time" value="09:00" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 text-sm font-medium">
+                            </div>
+                            <div>
+                                <span class="text-xs text-slate-500 block">End Time</span>
+                                <input type="time" id="preferred_end_time" value="17:00" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 text-sm font-medium">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Expected Participants *</label>
+                        <input type="number" id="expected_participants" min="10" max="2000" value="100" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500 text-base font-bold text-slate-900" required>
+                        <span class="text-xs text-slate-500 mt-1 block">Students & registered delegates</span>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Available Budget (INR ₹) *</label>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-500 font-bold">₹</span>
+                            <input type="number" id="available_budget" min="1000" step="500" value="25000" class="w-full pl-8 pr-3 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500 text-base font-bold text-blue-700" required>
+                        </div>
+                        <span class="text-xs text-slate-500 mt-1 block">Sanctioned departmental ceiling</span>
+                    </div>
+                </div>
+
+                <!-- 3. Venues and Seating Capacities -->
+                <div>
+                    <div class="flex justify-between items-center mb-2">
+                        <div>
+                            <h3 class="text-sm font-bold text-slate-900">Campus Venues & Seating Capacities</h3>
+                            <p class="text-xs text-slate-500">The agent checks participant capacity and flags overcrowding violations.</p>
+                        </div>
+                        <button type="button" id="btn-add-venue" class="px-3 py-1.5 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 text-xs font-semibold border border-blue-200 transition">
+                            + Add Another Venue
+                        </button>
+                    </div>
+
+                    <div class="overflow-x-auto rounded-xl border border-slate-200 bg-white">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-slate-100 text-xs font-bold text-slate-600 uppercase border-b border-slate-200">
+                                    <th class="p-2.5 text-center w-12">Target</th>
+                                    <th class="p-2.5">Venue Name</th>
+                                    <th class="p-2.5 text-center w-28">Seating Cap</th>
+                                    <th class="p-2.5 text-center w-48">Key Facilities</th>
+                                    <th class="p-2.5 text-center w-20">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="venues-table-body">
+                                <!-- Populated dynamically by app.js -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- 4. Technical Sessions Specification -->
+                <div class="p-5 bg-slate-50/70 rounded-2xl border border-slate-200/80">
+                    <div class="flex justify-between items-center mb-3">
+                        <h3 class="text-sm font-bold text-slate-900">Technical Sessions & Track Types</h3>
+                        <div class="flex items-center space-x-2">
+                            <span class="text-xs text-slate-500">Number of Sessions:</span>
+                            <input type="number" id="num_sessions" min="1" max="10" value="3" class="w-16 px-2 py-1 rounded border border-slate-300 text-sm font-bold text-center">
+                        </div>
+                    </div>
+                    <p class="text-xs text-slate-500 mb-3">Select the session formats to be included across the event timetable:</p>
+                    <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
+                        <label class="p-3 bg-white rounded-xl border border-slate-200 flex items-center space-x-2.5 cursor-pointer hover:border-blue-400 transition">
+                            <input type="checkbox" name="session_types" value="technical_talk" checked class="rounded text-blue-600 focus:ring-blue-500">
+                            <span class="text-xs font-semibold text-slate-800">Keynote Talks</span>
+                        </label>
+                        <label class="p-3 bg-white rounded-xl border border-slate-200 flex items-center space-x-2.5 cursor-pointer hover:border-blue-400 transition">
+                            <input type="checkbox" name="session_types" value="workshop" checked class="rounded text-blue-600 focus:ring-blue-500">
+                            <span class="text-xs font-semibold text-slate-800">Hands-on Workshops</span>
+                        </label>
+                        <label class="p-3 bg-white rounded-xl border border-slate-200 flex items-center space-x-2.5 cursor-pointer hover:border-blue-400 transition">
+                            <input type="checkbox" name="session_types" value="paper_presentation" class="rounded text-blue-600 focus:ring-blue-500">
+                            <span class="text-xs font-semibold text-slate-800">Paper Presentations</span>
+                        </label>
+                        <label class="p-3 bg-white rounded-xl border border-slate-200 flex items-center space-x-2.5 cursor-pointer hover:border-blue-400 transition">
+                            <input type="checkbox" name="session_types" value="coding_competition" checked class="rounded text-blue-600 focus:ring-blue-500">
+                            <span class="text-xs font-semibold text-slate-800">Coding Hackathon</span>
+                        </label>
+                        <label class="p-3 bg-white rounded-xl border border-slate-200 flex items-center space-x-2.5 cursor-pointer hover:border-blue-400 transition">
+                            <input type="checkbox" name="session_types" value="project_demonstration" class="rounded text-blue-600 focus:ring-blue-500">
+                            <span class="text-xs font-semibold text-slate-800">Project Expo / Demos</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- 5. People & Staffing Allocation -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div class="p-4 bg-white rounded-xl border border-slate-200">
+                        <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Speakers</label>
+                        <input type="number" id="num_speakers" min="0" max="20" value="2" class="w-full px-3 py-1.5 border rounded-lg font-bold text-slate-800">
+                        <span class="text-2xs text-slate-400 mt-1 block">Keynote dignitaries</span>
+                    </div>
+                    <div class="p-4 bg-white rounded-xl border border-slate-200">
+                        <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Judges</label>
+                        <input type="number" id="num_judges" min="0" max="20" value="2" class="w-full px-3 py-1.5 border rounded-lg font-bold text-slate-800">
+                        <span class="text-2xs text-slate-400 mt-1 block">Contest evaluators</span>
+                    </div>
+                    <div class="p-4 bg-white rounded-xl border border-slate-200">
+                        <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Faculty Advisors</label>
+                        <input type="number" id="num_faculty" min="1" max="15" value="3" class="w-full px-3 py-1.5 border rounded-lg font-bold text-slate-800">
+                        <span class="text-2xs text-slate-400 mt-1 block">Department coordinators</span>
+                    </div>
+                    <div class="p-4 bg-white rounded-xl border border-slate-200">
+                        <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Student Volunteers</label>
+                        <input type="number" id="num_volunteers" min="2" max="50" value="10" class="w-full px-3 py-1.5 border rounded-lg font-bold text-slate-800">
+                        <span class="text-2xs text-slate-400 mt-1 block">Ushering & stage crew</span>
+                    </div>
+                </div>
+
+                <!-- 6. Facilities & Equipment Availability -->
+                <div>
+                    <h3 class="text-sm font-bold text-slate-900 mb-1">Available Facilities & Equipment Checklist</h3>
+                    <p class="text-xs text-slate-500 mb-3">Uncheck any item to simulate equipment deficits (the agent validates missing requirements):</p>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+                        <label class="p-2.5 bg-slate-50 rounded-xl border border-slate-200 flex items-center space-x-2 cursor-pointer hover:bg-slate-100">
+                            <input type="checkbox" id="fac_projector" checked class="rounded text-blue-600 focus:ring-blue-500">
+                            <span class="font-medium text-slate-800">Projector & Screen</span>
+                        </label>
+                        <label class="p-2.5 bg-slate-50 rounded-xl border border-slate-200 flex items-center space-x-2 cursor-pointer hover:bg-slate-100">
+                            <input type="checkbox" id="fac_sound" checked class="rounded text-blue-600 focus:ring-blue-500">
+                            <span class="font-medium text-slate-800">Microphones & PA Sound</span>
+                        </label>
+                        <label class="p-2.5 bg-slate-50 rounded-xl border border-slate-200 flex items-center space-x-2 cursor-pointer hover:bg-slate-100">
+                            <input type="checkbox" id="fac_wifi" checked class="rounded text-blue-600 focus:ring-blue-500">
+                            <span class="font-medium text-slate-800">Campus Wi-Fi (100 Mbps)</span>
+                        </label>
+                        <label class="p-2.5 bg-slate-50 rounded-xl border border-slate-200 flex items-center space-x-2 cursor-pointer hover:bg-slate-100">
+                            <input type="checkbox" id="fac_computers" checked class="rounded text-blue-600 focus:ring-blue-500">
+                            <span class="font-medium text-slate-800">Computer Lab Desktops</span>
+                        </label>
+                        <label class="p-2.5 bg-slate-50 rounded-xl border border-slate-200 flex items-center space-x-2 cursor-pointer hover:bg-slate-100">
+                            <input type="checkbox" id="fac_power" checked class="rounded text-blue-600 focus:ring-blue-500">
+                            <span class="font-medium text-slate-800">Extension Power Strips</span>
+                        </label>
+                        <label class="p-2.5 bg-slate-50 rounded-xl border border-slate-200 flex items-center space-x-2 cursor-pointer hover:bg-slate-100">
+                            <input type="checkbox" id="fac_reg_desks" checked class="rounded text-blue-600 focus:ring-blue-500">
+                            <span class="font-medium text-slate-800">Registration Desks</span>
+                        </label>
+                        <label class="p-2.5 bg-slate-50 rounded-xl border border-slate-200 flex items-center space-x-2 cursor-pointer hover:bg-slate-100">
+                            <input type="checkbox" id="fac_water" checked class="rounded text-blue-600 focus:ring-blue-500">
+                            <span class="font-medium text-slate-800">Drinking Water Stations</span>
+                        </label>
+                        <label class="p-2.5 bg-slate-50 rounded-xl border border-slate-200 flex items-center space-x-2 cursor-pointer hover:bg-slate-100">
+                            <input type="checkbox" id="fac_stationery" checked class="rounded text-blue-600 focus:ring-blue-500">
+                            <span class="font-medium text-slate-800">Stationery & Badges</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- 7. Food, Refreshments & Resource Inclusions -->
+                <div class="p-5 bg-slate-50/70 rounded-2xl border border-slate-200/80">
+                    <h3 class="text-sm font-bold text-slate-900 mb-1">Hospitality, Kits & Logistics Preferences</h3>
+                    <p class="text-xs text-slate-500 mb-3">Toggles directly adjust budget line items with transparent formulas:</p>
+                    <div class="grid grid-cols-2 md:grid-cols-5 gap-3 text-xs">
+                        <label class="p-2.5 bg-white rounded-xl border border-slate-200 flex items-center space-x-2 cursor-pointer">
+                            <input type="checkbox" id="log_lunch" checked class="rounded text-blue-600 focus:ring-blue-500">
+                            <span class="font-medium text-slate-800">Working Lunch Buffet</span>
+                        </label>
+                        <label class="p-2.5 bg-white rounded-xl border border-slate-200 flex items-center space-x-2 cursor-pointer">
+                            <input type="checkbox" id="log_tea" checked class="rounded text-blue-600 focus:ring-blue-500">
+                            <span class="font-medium text-slate-800">Tea & Snacks (2x)</span>
+                        </label>
+                        <label class="p-2.5 bg-white rounded-xl border border-slate-200 flex items-center space-x-2 cursor-pointer">
+                            <input type="checkbox" id="log_kits" checked class="rounded text-blue-600 focus:ring-blue-500">
+                            <span class="font-medium text-slate-800">Participant Kits & Pens</span>
+                        </label>
+                        <label class="p-2.5 bg-white rounded-xl border border-slate-200 flex items-center space-x-2 cursor-pointer">
+                            <input type="checkbox" id="log_certs" checked class="rounded text-blue-600 focus:ring-blue-500">
+                            <span class="font-medium text-slate-800">Hard-Copy Certificates</span>
+                        </label>
+                        <label class="p-2.5 bg-white rounded-xl border border-slate-200 flex items-center space-x-2 cursor-pointer">
+                            <input type="checkbox" id="log_mementos" checked class="rounded text-blue-600 focus:ring-blue-500">
+                            <span class="font-medium text-slate-800">Dignitary Mementos</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- 8. User Confirmation Safeguard -->
+                <div class="p-4 bg-amber-50/60 rounded-2xl border border-amber-200">
+                    <span class="text-xs font-bold uppercase tracking-wider text-amber-800 block mb-1">Confirmation Safeguards (Section 5 Standard)</span>
+                    <p class="text-xs text-amber-700 mb-2.5">The system will not mark items as confirmed unless explicitly checked here:</p>
+                    <div class="flex flex-wrap gap-4 text-xs text-amber-900">
+                        <label class="flex items-center space-x-2 cursor-pointer">
+                            <input type="checkbox" id="conf_venue" class="rounded text-amber-600 focus:ring-amber-500">
+                            <span>Venue officially reserved with Campus Estate</span>
+                        </label>
+                        <label class="flex items-center space-x-2 cursor-pointer">
+                            <input type="checkbox" id="conf_speakers" class="rounded text-amber-600 focus:ring-amber-500">
+                            <span>Guest speakers & judges confirmed travel</span>
+                        </label>
+                        <label class="flex items-center space-x-2 cursor-pointer">
+                            <input type="checkbox" id="conf_budget" class="rounded text-amber-600 focus:ring-amber-500">
+                            <span>Department budget sanctioned by Finance Dean</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Submit Button -->
+                <div class="pt-4 flex flex-col md:flex-row items-center justify-between gap-4">
+                    <div class="text-xs text-slate-500">
+                        Deterministic reasoning engine validates 7 hard constraints before publishing plan.
+                    </div>
+                    <button type="button" id="btn-generate-plan" class="w-full md:w-auto px-8 py-3.5 rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 text-white font-bold text-base shadow-lg hover:shadow-xl hover:from-blue-700 hover:to-indigo-700 transition transform active:scale-95 flex items-center justify-center gap-2">
+                        <span>⚡ Generate Event Plan</span>
+                    </button>
+                </div>
+
+            </form>
+        </section>
+
+        <!-- Progress Indicator (Hidden by default) -->
+        <div id="planning-progress-banner" class="hidden mb-8 p-6 rounded-2xl bg-white border border-blue-200 shadow-md text-center">
+            <div class="inline-flex items-center justify-center p-3 bg-blue-50 rounded-full text-blue-600 mb-3 animate-pulse">
+                <svg class="w-8 h-8 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                </svg>
+            </div>
+            <h3 class="text-base font-bold text-slate-900 mb-1">TechPlan Agent Running Planning Cycle...</h3>
+            <p id="progress-step-text" class="text-xs font-mono text-blue-600">Phase 1/4: Decomposing event into 9 lifecycle phases & scheduling timetable...</p>
+        </div>
+
+        <!-- GENERATED PLAN DASHBOARD SECTION (Results) -->
+        <section id="plan-results-section" class="hidden">
+
+            <!-- Feasibility Status Banner -->
+            <div id="status-banner" class="p-5 rounded-2xl mb-8 border transition flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-sm">
+                <div class="flex items-start md:items-center space-x-3">
+                    <span id="status-pill" class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">Feasible Plan</span>
+                    <div>
+                        <h3 class="text-base font-bold" id="status-message">All 7 operational and institutional constraints are fully satisfied!</h3>
+                        <p class="text-xs opacity-80 mt-0.5">Automated validation report complete with transparent metrics and alternatives.</p>
+                    </div>
+                </div>
+                <!-- Action Buttons: PDF, CSV, Print -->
+                <div class="flex items-center space-x-2 no-print">
+                    <button type="button" id="btn-export-pdf" class="px-3.5 py-2 rounded-xl bg-white text-slate-800 border border-slate-300 hover:bg-slate-50 text-xs font-bold shadow-sm transition flex items-center gap-1.5">
+                        <span>📄 Download PDF</span>
+                    </button>
+                    <button type="button" id="btn-export-csv" class="px-3.5 py-2 rounded-xl bg-white text-slate-800 border border-slate-300 hover:bg-slate-50 text-xs font-bold shadow-sm transition flex items-center gap-1.5">
+                        <span>📊 Download CSV</span>
+                    </button>
+                    <button type="button" id="btn-print-plan" class="px-3.5 py-2 rounded-xl bg-white text-slate-800 border border-slate-300 hover:bg-slate-50 text-xs font-bold shadow-sm transition flex items-center gap-1.5">
+                        <span>🖨 Print</span>
+                    </button>
+                    <button type="button" id="btn-modify-req" class="px-3.5 py-2 rounded-xl bg-blue-600 text-white hover:bg-blue-700 text-xs font-bold shadow-sm transition flex items-center gap-1.5">
+                        <span>✏ Modify Inputs</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Key Metric Cards -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                <div class="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm">
+                    <span class="text-xs font-bold uppercase tracking-wider text-slate-400 block mb-1">Recommended Venue</span>
+                    <h4 id="metric-venue-name" class="text-lg font-bold text-slate-900 truncate">Main Auditorium</h4>
+                    <p id="metric-venue-util" class="text-xs text-slate-500 mt-1">66.7% capacity utilized (100/150 seats)</p>
+                </div>
+
+                <div class="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm">
+                    <span class="text-xs font-bold uppercase tracking-wider text-slate-400 block mb-1">Estimated Budget</span>
+                    <h4 id="metric-budget-cost" class="text-lg font-bold text-slate-900">₹22,265</h4>
+                    <p id="metric-budget-var" class="text-xs text-emerald-700 font-semibold mt-1">Sanctioned: ₹25,000 (+₹2,735)</p>
+                </div>
+
+                <div class="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm">
+                    <span class="text-xs font-bold uppercase tracking-wider text-slate-400 block mb-1">Task Decomposition</span>
+                    <h4 id="metric-tasks-count" class="text-lg font-bold text-slate-900">19 Tasks</h4>
+                    <p id="metric-tasks-phases" class="text-xs text-slate-500 mt-1">Across 9 lifecycle management phases</p>
+                </div>
+
+                <div class="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm">
+                    <span class="text-xs font-bold uppercase tracking-wider text-slate-400 block mb-1">Staffing & Footfall</span>
+                    <h4 id="metric-footfall-count" class="text-lg font-bold text-slate-900">119 Total Footfall</h4>
+                    <p id="metric-footfall-ratio" class="text-xs text-slate-500 mt-1">Volunteer ratio: 1 : 10</p>
+                </div>
+            </div>
+
+            <!-- Navigation Tabs for Structured Sections (A to L) -->
+            <div class="border-b border-slate-200 mb-8 overflow-x-auto no-print">
+                <nav class="flex space-x-6 min-w-max text-sm" aria-label="Tabs">
+                    <button type="button" class="tab-btn active py-3 px-1 transition" data-tab="tab-overview">
+                        A & B. Event & Venue Overview
+                    </button>
+                    <button type="button" class="tab-btn py-3 px-1 transition" data-tab="tab-tasks">
+                        C. Task Decomposition (9 Phases)
+                    </button>
+                    <button type="button" class="tab-btn py-3 px-1 transition" data-tab="tab-schedule">
+                        D & E. Timetable & Technical Tracks
+                    </button>
+                    <button type="button" class="tab-btn py-3 px-1 transition" data-tab="tab-resources">
+                        F, G & H. Resources, Crowd & Matrix
+                    </button>
+                    <button type="button" class="tab-btn py-3 px-1 transition" data-tab="tab-budget">
+                        I. Itemized Budget (INR ₹)
+                    </button>
+                    <button type="button" class="tab-btn py-3 px-1 transition" data-tab="tab-constraints">
+                        J, K & L. Constraint Report, Risks & Recs
+                    </button>
+                </nav>
+            </div>
+
+            <!-- TAB 1: OVERVIEW & VENUE (Sections A & B) -->
+            <div id="tab-overview" class="tab-panel space-y-8">
+                <!-- Section A: Event Overview -->
+                <div class="p-6 md:p-8 bg-white rounded-3xl border border-slate-200 shadow-sm">
+                    <div class="flex items-center justify-between mb-4 border-b pb-3">
+                        <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                            <span class="w-6 h-6 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center text-xs font-bold">A</span>
+                            Event Executive Overview
+                        </h3>
+                        <span class="text-xs text-slate-400 font-mono">Section A of L</span>
+                    </div>
+
+                    <div class="mb-4">
+                        <h2 id="ov-event-title" class="text-2xl font-extrabold text-slate-900 mb-1">National Technical Symposium</h2>
+                        <p id="ov-event-desc" class="text-sm text-slate-600">Flagship annual symposium featuring keynote presentations, hands-on cloud architecture workshop, and competitive coding hackathon.</p>
+                    </div>
+
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-200 text-xs">
+                        <div>
+                            <span class="text-slate-400 block mb-0.5">Event Date:</span>
+                            <span id="ov-date" class="font-bold text-slate-800 text-sm">2026-11-20</span>
+                        </div>
+                        <div>
+                            <span class="text-slate-400 block mb-0.5">Operating Hours:</span>
+                            <span id="ov-hours" class="font-bold text-slate-800 text-sm">09:00 AM to 05:00 PM</span>
+                        </div>
+                        <div>
+                            <span class="text-slate-400 block mb-0.5">Target Participants:</span>
+                            <span id="ov-participants" class="font-bold text-slate-800 text-sm">100 Students</span>
+                        </div>
+                        <div>
+                            <span class="text-slate-400 block mb-0.5">Sanctioned Budget:</span>
+                            <span id="ov-budget" class="font-bold text-blue-700 text-sm">₹25,000</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section B: Venue Recommendation -->
+                <div class="p-6 md:p-8 bg-white rounded-3xl border border-slate-200 shadow-sm">
+                    <div class="flex items-center justify-between mb-4 border-b pb-3">
+                        <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                            <span class="w-6 h-6 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center text-xs font-bold">B</span>
+                            Venue Recommendation & Capacity Analysis
+                        </h3>
+                        <span class="text-xs text-slate-400 font-mono">Section B of L</span>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                        <div class="p-4 bg-blue-50/60 rounded-2xl border border-blue-200">
+                            <span class="text-xs font-bold uppercase text-blue-700 block mb-1">Recommended Venue</span>
+                            <h4 id="vr-name" class="text-xl font-bold text-slate-900">Main College Auditorium</h4>
+                            <div class="mt-2 flex items-center space-x-2 text-xs">
+                                <span id="vr-capacity" class="font-semibold text-slate-700">150 Seats</span>
+                                <span>•</span>
+                                <span id="vr-util" class="font-semibold text-blue-700">66.7%</span>
+                                <span>•</span>
+                                <span id="vr-status-pill" class="font-bold text-emerald-700">Optimal Recommendation</span>
+                            </div>
+                            <div class="mt-3" id="vr-confirmed">
+                                <!-- Confirmed badge -->
+                            </div>
+                        </div>
+
+                        <div class="md:col-span-2 p-4 bg-slate-50 rounded-2xl border border-slate-200">
+                            <span class="text-xs font-bold uppercase text-slate-500 block mb-1">Agent Selection Rationale</span>
+                            <p id="vr-rationale" class="text-xs text-slate-700 leading-relaxed mb-3">
+                                Venue provides 150 seats for 100 attendees (66.7% utilization), allowing comfortable seating, aisle clearance, and space for AV/media desks.
+                            </p>
+                            <span class="text-xs font-bold uppercase text-slate-500 block mb-1">Contingency Space Alternatives</span>
+                            <ul id="vr-alternatives-list" class="space-y-1">
+                                <!-- Alternatives -->
+                            </ul>
+                        </div>
+                    </div>
+
+                    <h4 class="text-xs font-bold text-slate-600 uppercase mb-2">Evaluated Campus Facilities</h4>
+                    <div class="overflow-x-auto rounded-xl border border-slate-200">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-slate-100 text-xs font-bold text-slate-600 uppercase border-b border-slate-200">
+                                    <th class="py-2.5 px-3">Venue Name</th>
+                                    <th class="py-2.5 px-3 text-center">Seating Cap</th>
+                                    <th class="py-2.5 px-3 text-center">Utilization</th>
+                                    <th class="py-2.5 px-3 text-center">Feasibility Status</th>
+                                    <th class="py-2.5 px-3">Equipment Verified</th>
+                                </tr>
+                            </thead>
+                            <tbody id="vr-evaluated-table">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 2: TASK DECOMPOSITION (Section C) -->
+            <div id="tab-tasks" class="tab-panel hidden space-y-6">
+                <div class="p-6 md:p-8 bg-white rounded-3xl border border-slate-200 shadow-sm">
+                    <div class="flex flex-wrap items-center justify-between gap-4 mb-4 border-b pb-4">
+                        <div>
+                            <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                                <span class="w-6 h-6 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center text-xs font-bold">C</span>
+                                Task Decomposition (9 Lifecycle Phases)
+                            </h3>
+                            <p class="text-xs text-slate-500 mt-0.5">Interactive event readiness checklist decomposed into sequential deliverables with assigned owners.</p>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <span id="tasks-progress-label" class="text-xs font-bold text-blue-700 font-mono">0 of 19 tasks checked (0%)</span>
+                            <div class="w-32 h-2.5 bg-slate-200 rounded-full overflow-hidden">
+                                <div id="tasks-progress-bar" class="h-full bg-blue-600 transition-all duration-300" style="width: 0%"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Filter Toolbar -->
+                    <div class="flex flex-wrap gap-3 mb-4 p-3 bg-slate-50 rounded-2xl border border-slate-200 items-center justify-between text-xs">
+                        <div class="flex flex-wrap gap-2 items-center">
+                            <label class="font-bold text-slate-600">Filter Phase:</label>
+                            <select id="task-phase-filter" class="px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white font-medium">
+                                <option value="ALL">All 9 Lifecycle Phases</option>
+                            </select>
+
+                            <label class="font-bold text-slate-600 ml-2">Priority:</label>
+                            <select id="task-priority-filter" class="px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white font-medium">
+                                <option value="ALL">All Priorities</option>
+                                <option value="High">High Priority</option>
+                                <option value="Medium">Medium Priority</option>
+                                <option value="Low">Low Priority</option>
+                            </select>
+                        </div>
+
+                        <div class="relative w-full md:w-64">
+                            <input type="text" id="task-search-input" placeholder="Search tasks or roles..." class="w-full px-3 py-1.5 rounded-lg border border-slate-300 text-xs">
+                        </div>
+                    </div>
+
+                    <!-- Tasks Table -->
+                    <div class="overflow-x-auto rounded-2xl border border-slate-200">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-slate-100 text-xs font-bold text-slate-600 uppercase border-b border-slate-200">
+                                    <th class="p-3 text-center w-10">Done</th>
+                                    <th class="p-3 w-16">ID</th>
+                                    <th class="p-3">Phase & Task Description</th>
+                                    <th class="p-3 w-44">Assigned Role</th>
+                                    <th class="p-3 text-center w-24">Duration</th>
+                                    <th class="p-3 text-center w-20">Priority</th>
+                                    <th class="p-3 w-28">Deadline</th>
+                                    <th class="p-3 text-center w-28">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tasks-table-body">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 3: SCHEDULE & TECHNICAL SESSIONS (Sections D & E) -->
+            <div id="tab-schedule" class="tab-panel hidden space-y-8">
+                <!-- Section D: Detailed Event Schedule -->
+                <div class="p-6 md:p-8 bg-white rounded-3xl border border-slate-200 shadow-sm">
+                    <div class="flex flex-wrap items-center justify-between gap-4 mb-4 border-b pb-4">
+                        <div>
+                            <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                                <span class="w-6 h-6 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center text-xs font-bold">D</span>
+                                Detailed Event Schedule & Timetable
+                            </h3>
+                            <p class="text-xs text-slate-500">Non-overlapping activities scheduled sequentially with assigned teams and designated venues.</p>
+                        </div>
+                        <div id="schedule-days-selector" class="flex space-x-2">
+                            <!-- Multi-day switchers -->
+                        </div>
+                    </div>
+
+                    <div id="schedule-timeline-list" class="space-y-3">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+
+                <!-- Section E: Technical Sessions -->
+                <div class="p-6 md:p-8 bg-white rounded-3xl border border-slate-200 shadow-sm">
+                    <div class="flex items-center justify-between mb-4 border-b pb-3">
+                        <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                            <span class="w-6 h-6 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center text-xs font-bold">E</span>
+                            Technical Sessions Specifications
+                        </h3>
+                        <span class="text-xs text-slate-400 font-mono">Section E of L</span>
+                    </div>
+
+                    <div id="tech-sessions-grid" class="grid grid-cols-1 md:grid-cols-3 gap-5">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 4: RESOURCES, PARTICIPANTS & RESPONSIBILITY (Sections F, G, H) -->
+            <div id="tab-resources" class="tab-panel hidden space-y-8">
+                <!-- Section F: Resource and Equipment Checklist -->
+                <div class="p-6 md:p-8 bg-white rounded-3xl border border-slate-200 shadow-sm">
+                    <div class="flex items-center justify-between mb-4 border-b pb-3">
+                        <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                            <span class="w-6 h-6 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center text-xs font-bold">F</span>
+                            Resource & Equipment Checklist
+                        </h3>
+                        <span class="text-xs text-slate-400 font-mono">Section F of L</span>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div class="md:col-span-2 overflow-x-auto rounded-2xl border border-slate-200">
+                            <table class="w-full text-left border-collapse">
+                                <thead>
+                                    <tr class="bg-slate-100 text-xs font-bold text-slate-600 uppercase border-b border-slate-200">
+                                        <th class="p-3">Required Facility / Resource</th>
+                                        <th class="p-3">Category</th>
+                                        <th class="p-3 text-center">Verification</th>
+                                        <th class="p-3 text-center">Criticality</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="resources-table-body">
+                                    <!-- Populated dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div>
+                            <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Workarounds & Suggested Alternatives</h4>
+                            <div id="resource-workarounds-list" class="space-y-2.5">
+                                <!-- Populated dynamically -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section G: Participant Distribution -->
+                <div class="p-6 md:p-8 bg-white rounded-3xl border border-slate-200 shadow-sm">
+                    <div class="flex items-center justify-between mb-4 border-b pb-3">
+                        <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                            <span class="w-6 h-6 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center text-xs font-bold">G</span>
+                            Participant Distribution & Footfall Headcount
+                        </h3>
+                        <span class="text-xs text-slate-400 font-mono">Section G of L</span>
+                    </div>
+
+                    <div class="grid grid-cols-2 md:grid-cols-5 gap-4 text-center">
+                        <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200">
+                            <span class="text-xs text-slate-500 block mb-1">Students / Delegates</span>
+                            <span id="pd-students" class="text-2xl font-black text-slate-900">100</span>
+                        </div>
+                        <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200">
+                            <span class="text-xs text-slate-500 block mb-1">Speakers & Guests</span>
+                            <span id="pd-speakers" class="text-2xl font-black text-slate-900">2</span>
+                        </div>
+                        <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200">
+                            <span class="text-xs text-slate-500 block mb-1">Judges / Evaluators</span>
+                            <span id="pd-judges" class="text-2xl font-black text-slate-900">2</span>
+                        </div>
+                        <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200">
+                            <span class="text-xs text-slate-500 block mb-1">Faculty Leads</span>
+                            <span id="pd-faculty" class="text-2xl font-black text-slate-900">3</span>
+                        </div>
+                        <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200">
+                            <span class="text-xs text-slate-500 block mb-1">Student Volunteers</span>
+                            <span id="pd-volunteers" class="text-2xl font-black text-slate-900">10</span>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 p-4 bg-blue-50/60 rounded-2xl border border-blue-200 flex flex-wrap justify-between items-center text-xs text-slate-700">
+                        <div><b>Organizing Leads:</b> <span id="pd-leads">2</span></div>
+                        <div><b>Total Physical Footfall:</b> <span id="pd-total" class="font-bold text-slate-900">119</span></div>
+                        <div><b>Catering Meal Count:</b> <span id="pd-food" class="font-bold text-blue-700">124 Plates</span></div>
+                        <div><b>Certificate Run:</b> <span id="pd-certs" class="font-bold text-slate-900">110 Folders</span></div>
+                        <div><b>Volunteer-to-Student Ratio:</b> <span id="pd-ratio" class="font-bold text-emerald-700">1 : 10</span></div>
+                    </div>
+                </div>
+
+                <!-- Section H: Responsibility Assignment Matrix -->
+                <div class="p-6 md:p-8 bg-white rounded-3xl border border-slate-200 shadow-sm">
+                    <div class="flex items-center justify-between mb-4 border-b pb-3">
+                        <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                            <span class="w-6 h-6 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center text-xs font-bold">H</span>
+                            Responsibility Assignment Matrix (8 Core Roles)
+                        </h3>
+                        <span class="text-xs text-slate-400 font-mono">Section H of L</span>
+                    </div>
+
+                    <div id="resp-matrix-container" class="space-y-4">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 5: ESTIMATED BUDGET (Section I) -->
+            <div id="tab-budget" class="tab-panel hidden space-y-8">
+                <div class="p-6 md:p-8 bg-white rounded-3xl border border-slate-200 shadow-sm">
+                    <div class="flex items-center justify-between mb-4 border-b pb-3">
+                        <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                            <span class="w-6 h-6 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center text-xs font-bold">I</span>
+                            Estimated Budget & Transparent Costing Formulas (INR ₹)
+                        </h3>
+                        <span class="text-xs text-slate-400 font-mono">Section I of L</span>
+                    </div>
+
+                    <!-- Summary Cards -->
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                        <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200">
+                            <span class="text-xs text-slate-500 block mb-1">Sanctioned Budget</span>
+                            <span id="bg-total-avail" class="text-xl font-black text-slate-900">₹25,000</span>
+                        </div>
+                        <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200">
+                            <span class="text-xs text-slate-500 block mb-1">Total Estimated Expenses</span>
+                            <span id="bg-total-exp" class="text-xl font-black text-blue-700">₹22,265</span>
+                        </div>
+                        <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200">
+                            <span class="text-xs text-slate-500 block mb-1">Budget Surplus / Variance</span>
+                            <span id="bg-variance" class="text-xl font-black text-emerald-600">+₹2,735 (10.9%)</span>
+                        </div>
+                        <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200">
+                            <span class="text-xs text-slate-500 block mb-1">Emergency Contingency Fund</span>
+                            <span id="bg-contingency" class="text-xl font-black text-slate-900">₹1,060 (5%)</span>
+                        </div>
+                    </div>
+
+                    <!-- Categories breakdown -->
+                    <div class="mb-6">
+                        <span class="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-2">Category Subtotals</span>
+                        <div id="bg-categories-breakdown" class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+
+                    <!-- Line items table -->
+                    <h4 class="text-xs font-bold text-slate-600 uppercase mb-2">Itemized Expenditure Breakdown</h4>
+                    <div class="overflow-x-auto rounded-2xl border border-slate-200">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-slate-100 text-xs font-bold text-slate-600 uppercase border-b border-slate-200">
+                                    <th class="p-3 w-40">Category</th>
+                                    <th class="p-3">Item Description</th>
+                                    <th class="p-3">Transparent Formula / Rate</th>
+                                    <th class="p-3 text-right w-32">Total (₹)</th>
+                                    <th class="p-3">Logistical Notes</th>
+                                </tr>
+                            </thead>
+                            <tbody id="budget-items-table">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 6: CONSTRAINTS, RISKS & RECOMMENDATIONS (Sections J, K, L) -->
+            <div id="tab-constraints" class="tab-panel hidden space-y-8">
+                <!-- Section J: Constraint Validation Report -->
+                <div class="p-6 md:p-8 bg-white rounded-3xl border border-slate-200 shadow-sm">
+                    <div class="flex items-center justify-between mb-4 border-b pb-3">
+                        <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                            <span class="w-6 h-6 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center text-xs font-bold">J</span>
+                            Deterministic Constraint Validation Report
+                        </h3>
+                        <div class="flex items-center space-x-2 text-xs">
+                            <span id="cr-passed-count" class="font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">7 Passed</span>
+                            <span id="cr-warning-count" class="font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">0 Warnings</span>
+                            <span id="cr-failed-count" class="font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200">0 Failed</span>
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto rounded-2xl border border-slate-200">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-slate-100 text-xs font-bold text-slate-600 uppercase border-b border-slate-200">
+                                    <th class="p-3 w-48">Constraint Name</th>
+                                    <th class="p-3 w-36">Category</th>
+                                    <th class="p-3 text-center w-28">Status</th>
+                                    <th class="p-3">Audit Details & Practical Alternatives</th>
+                                </tr>
+                            </thead>
+                            <tbody id="constraints-table-body">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Section K: Risks and Alternative Solutions -->
+                <div class="p-6 md:p-8 bg-white rounded-3xl border border-slate-200 shadow-sm">
+                    <div class="flex items-center justify-between mb-4 border-b pb-3">
+                        <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                            <span class="w-6 h-6 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center text-xs font-bold">K</span>
+                            Risks & Alternative Solutions Matrix
+                        </h3>
+                        <span class="text-xs text-slate-400 font-mono">Section K of L</span>
+                    </div>
+
+                    <div id="risks-container" class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+
+                <!-- Section L: Final Recommendations -->
+                <div class="p-6 md:p-8 bg-white rounded-3xl border border-slate-200 shadow-sm">
+                    <div class="flex items-center justify-between mb-4 border-b pb-3">
+                        <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                            <span class="w-6 h-6 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center text-xs font-bold">L</span>
+                            Final Recommendations & Strategic Takeaways
+                        </h3>
+                        <span class="text-xs text-slate-400 font-mono">Section L of L</span>
+                    </div>
+
+                    <ul id="final-recommendations-list" class="space-y-3">
+                        <!-- Populated dynamically -->
+                    </ul>
+                </div>
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-slate-900 text-slate-400 text-xs py-6 border-t border-slate-800 mt-12 no-print">
+        <div class="max-w-7xl mx-auto px-4 text-center">
+            <p class="font-medium text-slate-300">TechPlan AI – Technical Event Planner Agent</p>
+            <p class="mt-1">Automated Planning • 9-Phase Task Decomposition • Deterministic Constraint Checking • Transparent INR Budgeting</p>
+        </div>
+    </footer>
+
+    <!-- App Engine Script -->
+    <script src="/static/app.js"></script>
+</body>
+</html>
